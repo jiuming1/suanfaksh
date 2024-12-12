@@ -1,0 +1,336 @@
+:root {
+    --primary-color: #2196f3;
+    --secondary-color: #64b5f6;
+    --background-color: #f5f5f5;
+    --surface-color: #ffffff;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+    
+    --node-start: #4caf50;
+    --node-end: #f44336;
+    --node-wall: #37474f;
+    --node-visited: #bbdefb;
+    --node-path: #ffeb3b;
+    
+    --shadow-1: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-2: 0 4px 8px rgba(0,0,0,0.1);
+    
+    --grid-size: 600px;
+}
+
+[data-theme="dark"] {
+    --background-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-color: #ffffff;
+    --border-color: #333333;
+    --node-visited: #1565c0;
+    --node-path: #ffd600;
+    --shadow-1: 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-2: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.5;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.theme-language-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-button:hover {
+    background-color: var(--border-color);
+}
+
+.icon-button .material-icons {
+    font-size: 20px;
+}
+
+[data-theme="dark"] .icon-button .material-icons {
+    transform: rotate(180deg);
+}
+
+.control-panel {
+    background-color: var(--surface-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    margin-bottom: 20px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.algorithm-controls,
+.grid-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.algorithm-controls {
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.grid-controls {
+    margin-bottom: 0;
+    padding-top: 15px;
+}
+
+.size-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+input[type="number"] {
+    width: 70px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+}
+
+.size-display {
+    min-width: 80px;
+}
+
+select,
+button {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+select {
+    padding-right: 30px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    white-space: nowrap;
+}
+
+button:hover {
+    background-color: var(--secondary-color);
+}
+
+input[type="range"] {
+    width: 150px;
+    accent-color: var(--primary-color);
+}
+
+.grid-wrapper {
+    width: var(--grid-size);
+    height: var(--grid-size);
+    margin: 0 auto;
+    padding: 20px;
+    background-color: var(--surface-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.grid-container {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 1px;
+    background-color: var(--border-color);
+    transition: background-color 0.3s;
+}
+
+.node {
+    width: 100%;
+    height: 100%;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.node.start {
+    background-color: var(--node-start);
+}
+
+.node.end {
+    background-color: var(--node-end);
+}
+
+.node.wall {
+    background-color: var(--node-wall);
+}
+
+.node.visited {
+    background-color: var(--node-visited);
+}
+
+.node.path {
+    background-color: var(--node-path);
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px 0;
+}
+
+.stat-item {
+    background-color: var(--surface-color);
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: var(--shadow-1);
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    background-color: var(--surface-color);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-item .node {
+    width: 20px;
+    height: 20px;
+}
+
+@media (max-width: 768px) {
+    :root {
+        --grid-size: 90vw;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    .control-panel {
+        padding: 15px;
+    }
+
+    .algorithm-controls,
+    .grid-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .algorithm-controls {
+        gap: 10px;
+    }
+
+    .theme-language-controls {
+        margin-bottom: 10px;
+    }
+
+    .grid-wrapper {
+        padding: 10px;
+    }
+
+    .stats {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .legend {
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+}
+
+.toggle-button {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.toggle-button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: #667eea;
+    border-radius: 50%;
+} 

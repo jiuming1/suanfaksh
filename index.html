@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路径搜索算法可视化</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <style>
+        /* 添加用户信息样式 */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+        }
+
+        .user-name {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        #logout {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #logout:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 未登录遮罩层样式 */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-message {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            margin: 20px;
+        }
+
+        .login-message h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+
+        .login-message p {
+            margin: 0 0 20px 0;
+            color: #666;
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .login-buttons a {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .login-buttons .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .login-buttons .register-btn {
+            background: white;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .login-buttons a:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- 未登录遮罩层 -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-message">
+            <h2>请先登录</h2>
+            <p>登录后即可使用路径搜索算法可视化功能</p>
+            <div class="login-buttons">
+                <a href="login.html" class="login-btn">登录</a>
+                <a href="register.html" class="register-btn">注册</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>路径搜索算法可视化</h1>
+            <div class="user-info">
+                <div class="theme-language-controls">
+                    <button id="theme-toggle" class="icon-button" title="切换主题">
+                        <span class="material-icons">dark_mode</span>
+                    </button>
+                    <select id="language" title="选择语言">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="user-profile" id="userProfile" ">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <span class="user-name" id="userName"></span>
+                </div>
+                <button id="logout" ">退出登录</button>
+            </div>
+        </header>
+
+        <div class="control-panel">
+            <div class="algorithm-controls">
+                <label for="algorithm">选择算法：</label>
+                <select id="algorithm">
+                    <option value="astar">A* 算法</option>
+                    <option value="dijkstra">Dijkstra 算法</option>
+                    <option value="bfs">广度优先搜索 (BFS)</option>
+                    <option value="dfs">深度优先搜索 (DFS)</option>
+                </select>
+                <button id="start">开始搜索</button>
+                <button id="clear">清除路径</button>
+                <button id="randomWalls">随机生成墙壁</button>
+                <button id="clearWalls">清除墙壁</button>
+            </div>
+
+            <div class="grid-controls">
+                <label for="gridSize">网格大小：</label>
+                <div class="size-control">
+                    <input type="number" id="gridSize" min="2" max="100" value="20" step="1">
+                    <span class="size-display">20 x 20</span>
+                </div>
+
+                <label for="speed">动画速度：</label>
+                <input type="range" id="speed" min="1" max="200" value="100">
+            </div>
+        </div>
+
+        <main>
+            <div class="grid-wrapper">
+                <div class="grid-container" id="grid"></div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <label>已访问节点：</label>
+                    <span id="visitedCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <label>路径长度：</label>
+                    <span id="pathLength">0</span>
+                </div>
+                <div class="stat-item">
+                    <label>执行时间：</label>
+                    <span id="executionTime">0</span> ms
+                </div>
+            </div>
+        </main>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="node start"></div>
+                <span>起点</span>
+            </div>
+            <div class="legend-item">
+                <div class="node end"></div>
+                <span>终点</span>
+            </div>
+            <div class="legend-item">
+                <div class="node wall"></div>
+                <span>墙壁</span>
+            </div>
+            <div class="legend-item">
+                <div class="node visited"></div>
+                <span>已访问</span>
+            </div>
+            <div class="legend-item">
+                <div class="node path"></div>
+                <span>最短路径</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加Material Icons字体 -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script type="module">
+        import { API } from './src/js/api.js';
+        import { PathfindingVisualizer } from './src/js/main.js';
+
+        let visualizer = null;
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            const token = API.getToken();
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                // 未登录，显示遮罩层
+                document.getElementById('loginOverlay').style.display = 'flex';
+                document.getElementById('userProfile').style.display = 'none';
+                document.getElementById('logout').style.display = 'none';
+                // 如果已经初始化了可视化器，需要清理
+                if (visualizer) {
+                    // TODO: 如果需要，可以添加清理逻辑
+                    visualizer = null;
+                }
+                return false;
+            }
+
+            // 已登录，显示用户信息
+            const user = JSON.parse(userStr);
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('userProfile').style.display = 'flex';
+            document.getElementById('logout').style.display = 'block';
+            
+            // 设置用户头像和名称
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            userAvatar.textContent = user.username.charAt(0).toUpperCase();
+            userName.textContent = user.username;
+
+            // 如果还没有���始化可视化器，现在初始
+            if (!visualizer) {
+                visualizer = new PathfindingVisualizer();
+            }
+
+            return true;
+        }
+
+        // 页面加载时检查登录状态
+        window.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus();
+        });
+
+        // 退出登录
+        document.getElementById('logout').addEventListener('click', () => {
+            API.logout();
+            checkLoginStatus();
+        });
+    </script>
+</body>
+</html> 

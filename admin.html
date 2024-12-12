@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户数据分析 - 管理员面板</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+        }
+
+        [data-theme="dark"] {
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --border-color: #444444;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .users-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .users-table tr:hover {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        #theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .refresh-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>用户数据分析</h1>
+            <div>
+                <button id="theme-toggle" title="切换主题">
+                    <span class="material-icons">dark_mode</span>
+                </button>
+                <button class="refresh-button" onclick="refreshData()">
+                    <span class="material-icons">refresh</span>
+                    刷新数据
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>总用户数</h3>
+                <div id="totalUsers" class="value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>今日注册</h3>
+                <div id="todayRegistrations" class="value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>今日登录</h3>
+                <div id="todayLogins" class="value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>活跃用户</h3>
+                <div id="activeUsers" class="value">0</div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <canvas id="registrationChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <canvas id="loginChart"></canvas>
+            </div>
+        </div>
+
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>用户名</th>
+                    <th>邮箱</th>
+                    <th>注册时间</th>
+                    <th>最后登录</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { API } from './src/js/api.js';
+
+        // 主题切换
+        const themeToggle = document.getElementById('theme-toggle');
+        let isDarkTheme = localStorage.getItem('admin-theme') === 'dark';
+
+        function updateTheme() {
+            document.body.dataset.theme = isDarkTheme ? 'dark' : 'light';
+            themeToggle.innerHTML = `<span class="material-icons">${isDarkTheme ? 'light_mode' : 'dark_mode'}</span>`;
+        }
+
+        themeToggle.addEventListener('click', () => {
+            isDarkTheme = !isDarkTheme;
+            localStorage.setItem('admin-theme', isDarkTheme ? 'dark' : 'light');
+            updateTheme();
+        });
+
+        updateTheme();
+
+        // 图表配置
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        };
+
+        // 初始化图表
+        const registrationCtx = document.getElementById('registrationChart').getContext('2d');
+        const loginCtx = document.getElementById('loginChart').getContext('2d');
+
+        const registrationChart = new Chart(registrationCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '每日注册用户',
+                    data: [],
+                    borderColor: '#4CAF50',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+
+        const loginChart = new Chart(loginCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '每日登录用户',
+                    data: [],
+                    borderColor: '#2196F3',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+
+        async function refreshData() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (response.status === 403) {
+                    alert('您没有管理员权限');
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('获取数据失败');
+                }
+
+                const data = await response.json();
+
+                // 更新统计卡片
+                document.getElementById('totalUsers').textContent = data.totalUsers;
+                document.getElementById('todayRegistrations').textContent = data.todayRegistrations;
+                document.getElementById('todayLogins').textContent = data.todayLogins;
+                document.getElementById('activeUsers').textContent = data.activeUsers;
+
+                // 更新注册图表
+                registrationChart.data.labels = data.registrationChart.labels;
+                registrationChart.data.datasets[0].data = data.registrationChart.data;
+                registrationChart.update();
+
+                // 更新登录图表
+                loginChart.data.labels = data.loginChart.labels;
+                loginChart.data.datasets[0].data = data.loginChart.data;
+                loginChart.update();
+
+                // 更新用户表格
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${new Date(user.created_at).toLocaleString()}</td>
+                        <td>${new Date(user.last_login).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                alert('获取数据失败，请检查网络连接或登录状态');
+            }
+        }
+
+        // 检查登录状态和管理员权限
+        async function checkAdminAccess() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (response.status === 403) {
+                    alert('您没有管理员权限');
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                // 如果验证通过，加载数据
+                refreshData();
+            } catch (error) {
+                console.error('验证失败:', error);
+                alert('验证失败，请重新登录');
+                window.location.href = '/login.html';
+            }
+        }
+
+        // 页面加载时检查权限
+        checkAdminAccess();
+
+        // 暴露给全局使用
+        window.refreshData = refreshData;
+    </script>
+</body>
+</html> 
